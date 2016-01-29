@@ -1,12 +1,30 @@
 - _has_title = title?
+/ NOTE for style to source if language is specified
+- if (_style = style) == 'listing' && (document.attr? 'source-language') && !(attributes[1] && (attributes[1].start_with? _style))
+  - set_attr 'style', (@style = _style = 'source')
+  - set_attr 'language', (local_attr 2, (document.attr 'source-language')) unless local_attr? 'language'
 - content_for :pre
-  - if style == 'source' && (_lang = local_attr :language)
-    / NOTE class attribute required for highlight.js and prettify
-    / QUESTION should we add a "highlight" class to pre?
-    pre.source id=(id unless _has_title) : code data-lang=_lang class="language-#{_lang} prettyprint" =content
+  / FIXME integrate build-lines logic into main block
+  - if local_attr? 'build-lines'
+    - _lines = content.lines
+    - _ranges = (local_attr 'build-lines').split(';').map {|_val| _val.include?('..') ? Range.new(*_val.split('..', 2).map {|_num| _num.to_i - 1 }) : (_val.to_i - 1.._val.to_i - 1) }
+    - if _style == 'source' && (_lang = local_attr :language)
+      pre.source.build.build-items id=(id unless _has_title) class=role
+        - _ranges.each do |_range|
+          / NOTE class attribute is required for highlight.js and prettify
+          / QUESTION should we add a "highlight" class to pre?
+          code data-lang=_lang class="language-#{_lang} prettyprint" =_lines[_range].join
+    - else
+      pre.build.build-items id=(id unless _has_title) class=role
+        - _ranges.each do |_range|
+          code=_lines[_range].join
   - else
-    / QUESTION should we add a class to pre?
-    pre id=(id unless _has_title) : code =content
+    - if _style == 'source' && (_lang = local_attr :language)
+      / NOTE class attribute is required for highlight.js and prettify
+      / QUESTION should we add a "highlight" class to pre?
+      pre.source id=(id unless _has_title) class=role : code data-lang=_lang class="language-#{_lang} prettyprint" =content
+    - else
+      pre id=(id unless _has_title) class=role : code =content
 - if _has_title
   figure.listing id=id
     figcaption=title
